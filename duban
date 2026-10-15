@@ -1,0 +1,45 @@
+name: DevSecOps CI/CD Pipeline
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+jobs:
+  sast_scan:
+    name: Análisis Estático de Código (SAST)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar código fuente
+        uses: actions/checkout@v3
+      - name: Ejecutar Semgrep (SAST)
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: p/ci
+        continue-on-error: true
+  sca_scan:
+    name: Análisis de Composición / Dependencias (SCA)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar código fuente
+        uses: actions/checkout@v3
+      - name: Configurar Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Escaneo de Dependencias con Snyk (SCA)
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+  dast_scan:
+    name: Análisis Dinámico de Seguridad (DAST)
+    runs-on: ubuntu-latest
+    needs: [sast_scan, sca_scan]
+    steps:
+      - name: Escaneo DAST con OWASP ZAP (Baseline)
+        uses: zaproxy/action-baseline@v0.7.0
+        with:
+          target: 'https://juice-shop.herokuapp.com'
+          fail_action: false
