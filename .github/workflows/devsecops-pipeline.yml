@@ -11,15 +11,13 @@ jobs:
   sast_scan:
     name: Análisis Estático de Código (SAST)
     runs-on: ubuntu-latest
-
+    container:
+      image: semgrep/semgrep
     steps:
       - name: Clonar código fuente
         uses: actions/checkout@v4
-
       - name: Ejecutar Semgrep (SAST)
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: p/ci
+        run: semgrep scan --config p/ci --config p/owasp-top-ten
         continue-on-error: true
 
 
